@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <OutputType>exe</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="lz4net" Version="1.0.15.93" />
+        <PackageReference Include="ZstdNet" Version="1.4.5" />
+    </ItemGroup>
+
+</Project>
