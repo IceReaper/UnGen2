@@ -8,17 +8,16 @@ namespace UnGen2
 
 	public static class Program
 	{
-		public static void Main()
+		public static void Main(string[] args)
 		{
 			var cats = new Dictionary<string, Cat>();
 			var cass = new Dictionary<string, Cas>();
+			var dataTrees = new Dictionary<string, DataTree>();
 
-			var path = "C:/Users/andre/Desktop/Generals2/Data";
+			var path = args.Length > 0 ? args[0] : "";
 
 			foreach (var file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
 			{
-				Console.Write(Path.GetRelativePath(path, file));
-
 				Stream stream = File.OpenRead(file);
 				var reader = new BinaryReader(stream);
 
@@ -26,7 +25,6 @@ namespace UnGen2
 
 				if (magic == Decrypter.Magic)
 				{
-					Console.Write(" [Encrypted]");
 					var decrypted = Decrypter.Decrypt(reader);
 
 					stream.Dispose();
@@ -37,25 +35,35 @@ namespace UnGen2
 				else
 					stream.Position = 0;
 
+				// This file contains a single checksum. We can safely ignore it as we wont need it at all.
+				if (file.EndsWith("layout.bin"))
+					continue;
+
 				if (file.EndsWith(".cat"))
-					cats.Add(file, new(reader));
-
-				if (file.EndsWith(".cas"))
-					cass.Add(file, new(reader));
-
-				if (file.EndsWith(".fb2"))
+					cats.Add(Path.GetRelativePath(path, file), new(reader));
+				else if (file.EndsWith(".cas"))
+					cass.Add(Path.GetRelativePath(path, file), new(reader));
+				else if (file.EndsWith(".fb2"))
 				{
-					Console.Write(" [Zip]");
 					var zip = new ZipArchive(stream);
 
 					foreach (var entry in zip.Entries.Where(entry => entry.Name != ""))
-						Console.Write($"\n {entry.FullName}");
-				}
+					{
+						Console.WriteLine($"  - {entry.FullName}");
 
-				Console.Write("\n");
+						var data = new byte[entry.Length];
+						stream = new MemoryStream(data);
+						reader = new(stream);
+
+						entry.Open().Read(data);
+
+						dataTrees.Add(entry.FullName, new(reader));
+					}
+				}
+				else
+					dataTrees.Add(Path.GetRelativePath(path, file), new(reader));
 			}
 
-			Console.WriteLine("---");
 			var i = 0;
 
 			foreach (var (name, cat) in cats)
@@ -73,13 +81,41 @@ namespace UnGen2
 
 					switch (unk1)
 					{
+						case 0x00 when unk2 == 0x000008:
+							// TODO
+							break;
+
+						case 0x00 when unk2 == 0x000010:
+							// TODO
+							break;
+
+						case 0x00 when unk2 == 0x000800:
+							// TODO
+							break;
+
+						case 0x00 when unk2 == 0x001000:
+							// TODO
+							break;
+
+						case 0x00 when unk2 == 0x002000:
+							// TODO
+							break;
+
+						case 0x00 when unk2 == 0x004000:
+							// TODO
+							break;
+
+						case 0x00 when unk2 == 0x008000:
+							// TODO
+							break;
+
+						case 0x00 when unk2 == 0x010000:
+							// TODO
+							break;
+
 						case 0x00:
 							var uncompressedSize = unk2;
 							var compressedSize = (reader.ReadByte() << 24) | (reader.ReadByte() << 16) | (reader.ReadByte() << 8) | (reader.ReadByte() << 0);
-
-							// TODO something is odd here...
-							/*if (compressedSize != data.Length - 8)
-								Console.WriteLine($"{compressedSize}\t{uncompressedSize}\t{data.Length - 8}");*/
 
 							// TODO some ZLIB here... Not sure about the others, possibly LZ4 and ZStd somewhere!
 							break;
@@ -91,7 +127,7 @@ namespace UnGen2
 
 						case 0x48 when unk2 == 0x00000c:
 							// TODO
-							// Mosty followed by 0x80bb0014, sometimes 0x80bb0414 or 0x80bb0c14 or 44ac0014 or 44ac0414 
+							// Mostly followed by 0x80bb0014, sometimes 0x80bb0414 or 0x80bb0c14 or 44ac0014 or 44ac0414 
 							break;
 
 						case 0x4D when unk2 == 0x566864:

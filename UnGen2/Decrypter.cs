@@ -3,7 +3,7 @@
 	using System.IO;
 	using System.Linq;
 
-	public class Decrypter
+	public static class Decrypter
 	{
 		public const int Magic = 0x00CED100; // D1CE :D
 
@@ -15,7 +15,7 @@
 			if (reader.ReadChar() != 'x')
 				throw new("Decrypter: unknown hash start");
 
-			var hash = reader.ReadBytes(256); // TODO
+			reader.ReadBytes(256); // hash
 
 			if (reader.ReadChar() != 'x')
 				throw new("Decrypter: unknown hash end");
