@@ -1,39 +1,48 @@
-﻿namespace UnGen2
+﻿namespace UnGen2;
+
+using System.IO;
+using System.Linq;
+using System.Text;
+
+public static class Decrypter
 {
-	using System.IO;
-	using System.Linq;
+	public const uint Magic = 0x00CED100;
 
-	public static class Decrypter
+	public static byte[] Decrypt(BinaryReader reader)
 	{
-		public const int Magic = 0x00CED100; // D1CE :D
+		var magic = reader.ReadUInt32();
+		var unk1 = reader.ReadInt32();
 
-		public static byte[] Decrypt(BinaryReader reader)
-		{
-			if (reader.ReadInt32() != 0)
-				throw new("Decrypter: unknown value");
+		// layout.bin has a similar structure
+		var unk2 = reader.ReadChar();
+		var unkHash = Encoding.ASCII.GetString(reader.ReadBytes(256));
+		var unk3 = reader.ReadChar();
 
-			if (reader.ReadChar() != 'x')
-				throw new("Decrypter: unknown hash start");
+		var unk4 = reader.ReadBytes(30);
+		var table = reader.ReadBytes(257);
+		var unk5 = reader.ReadBytes(3);
+		var encrypted = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
 
-			reader.ReadBytes(256); // hash
+		if (magic != Decrypter.Magic)
+			throw new($"Decrypter: magic must be {Decrypter.Magic:X8}");
 
-			if (reader.ReadChar() != 'x')
-				throw new("Decrypter: unknown hash end");
+		if (unk1 != 0)
+			throw new("Decrypter: unk1 must be empty");
 
-			if (reader.ReadBytes(30).Any(value => value != 0))
-				throw new("Decrypter: unknown value");
+		if (unk2 != 'x')
+			throw new("Decrypter: unk2");
 
-			var table = reader.ReadBytes(257);
+		// TODO hash
 
-			if (reader.ReadBytes(3).Any(value => value != 0))
-				throw new("Decrypter: unknown value");
+		if (unk3 != 'x')
+			throw new("Decrypter: unk3");
 
-			var decrypted = new byte[reader.BaseStream.Length - reader.BaseStream.Position];
+		if (unk4.Any(value => value != 0))
+			throw new("Decrypter: unk4 must be empty");
 
-			for (var i = 0; i < decrypted.Length; i++)
-				decrypted[i] = (byte)(reader.ReadByte() ^ table[i % table.Length] ^ 0x7b);
+		if (unk5.Any(value => value != 0))
+			throw new("Decrypter: unk5 must be empty");
 
-			return decrypted;
-		}
+		return encrypted.Select((value, index) => (byte)(value ^ table[index % table.Length] ^ 0x7b)).ToArray();
 	}
 }

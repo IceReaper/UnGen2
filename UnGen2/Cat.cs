@@ -1,21 +1,31 @@
-﻿namespace UnGen2
+﻿namespace UnGen2;
+
+using System.Collections.Generic;
+using System.IO;
+
+public class Cat
 {
-	using System.Collections.Generic;
-	using System.IO;
+	public record CatEntry(byte[] Sha1, int Offset, int Size, int CasId);
 
-	public class Cat
+	private const string Magic = "NyanNyanNyanNyan";
+
+	public readonly List<CatEntry> Entries = new();
+
+	public Cat(BinaryReader reader)
 	{
-		private const string Magic = "NyanNyanNyanNyan";
+		var magic = new string(reader.ReadChars(16));
 
-		public readonly List<CatEntry> Entries = new();
+		if (magic != Cat.Magic)
+			throw new($"Cat: magic must be {magic}");
 
-		public Cat(BinaryReader reader)
+		while (reader.BaseStream.Position < reader.BaseStream.Length)
 		{
-			if (new string(reader.ReadChars(16)) != Cat.Magic)
-				throw new("Cat: wrong magic");
+			var sha1 = reader.ReadBytes(20);
+			var offset = reader.ReadInt32();
+			var size = reader.ReadInt32();
+			var casId = reader.ReadInt32();
 
-			while (reader.BaseStream.Position < reader.BaseStream.Length)
-				this.Entries.Add(new(reader.ReadBytes(20), reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32()));
+			this.Entries.Add(new(sha1, offset, size, casId));
 		}
 	}
 }

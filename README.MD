@@ -7,7 +7,7 @@ The primary goal of this project is to fully parse every single asset in the C&C
 Current state:
 - [X] Read the CAT/CAS asset containers
 - [X] Decrypt and read the data containers
-- [ ] Implement the CAS compressions
+- [X] Implement the CAS compressions
 - [ ] Figure out filenames and filetypes
 - [ ] Insert all filetypes to this list
 - [ ] Fully parse the asset formats

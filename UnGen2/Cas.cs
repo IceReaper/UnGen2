@@ -1,38 +1,45 @@
-﻿namespace UnGen2
+﻿namespace UnGen2;
+
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+
+public class Cas
 {
-	using System.IO;
-	using System.Linq;
+	private const uint Magic = 0xF00FCEFA;
 
-	public class Cas
+	private readonly BinaryReader reader;
+
+	public Cas(BinaryReader reader)
 	{
-		private readonly BinaryReader reader;
+		this.reader = reader;
+	}
 
-		public Cas(BinaryReader reader)
-		{
-			this.reader = reader;
-		}
+	public byte[] GetData(Cat.CatEntry catEntry)
+	{
+		this.reader.BaseStream.Position = catEntry.Offset - 32;
 
-		public byte[] GetData(CatEntry catEntry)
-		{
-			this.reader.BaseStream.Position = catEntry.Offset - 32;
-			var unk1 = this.reader.ReadUInt32();
-			var sha1 = this.reader.ReadBytes(20);
-			var fileSize = this.reader.ReadInt32();
-			var unk2 = this.reader.ReadInt32();
+		var magic = this.reader.ReadUInt32();
+		var sha1 = this.reader.ReadBytes(20);
+		var size = this.reader.ReadInt32();
+		var unk = this.reader.ReadInt32();
+		var data = this.reader.ReadBytes(size);
 
-			if (unk1 != 0xF00FCEFA) // FACE0FF :D
-				throw new("Cas: Wrong unk1");
-			
-			if (!catEntry.Sha1.SequenceEqual(sha1))
-				throw new("Cas: Wrong sha1");
+		if (magic != Cas.Magic)
+			throw new($"Cas: magic must be {Cas.Magic:X8}");
 
-			if (catEntry.Size != fileSize)
-				throw new("Cas: Wrong fileSize");
+		if (!catEntry.Sha1.SequenceEqual(sha1))
+			throw new("Cas: sha1 not equal to cat sha1");
 
-			if (unk2 != 0)
-				throw new("Cas: Wrong unk2");
+		if (catEntry.Size != size)
+			throw new("Cas: size not equal to cat size");
 
-			return this.reader.ReadBytes(catEntry.Size);
-		}
+		if (unk != 0)
+			throw new("Cas: unk must be empty");
+
+		if (!SHA1.HashData(data).SequenceEqual(sha1))
+			throw new("Cas: data sha1 mismatch");
+
+		return Unpacker.Unpack(data);
 	}
 }
